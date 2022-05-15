@@ -8,40 +8,58 @@ from tqdm import tqdm
 from the_pile.utils import humanbytes, parse_size
 from the_pile.datasets import *
 
-
 datasets = [
     # Academic
-    (PubMedCentralDataset(), 2.  ),
-    (ArXivDataset()        , 2.  ),
-    (FreeLawDataset()      , 1.5 ),
-    (USPTODataset()        , 2.  ),
-    (PubMedDataset()       , 2.  ),
-    (PhilPapersDataset()   , 2.  ),
-    (ExPorterDataset()     , 2.  ),
+    (PubMedCentralDataset(), 2.),
+    (ArXivDataset(), 2.),
+    (FreeLawDataset(), 1.5),
+    (USPTODataset(), 2.),
+    (PubMedDataset(), 2.),
+    (PhilPapersDataset(), 2.),
+    (ExPorterDataset(), 2.),
 
     # General internet
-    (OpenWebText2Dataset() , 2.  ),
-    (StackExchangeDataset(), 2.  ),
-    (WikipediaDataset()    , 3.  ),
+    (OpenWebText2Dataset(), 2.),
+    (StackExchangeDataset(), 2.),
+    (WikipediaDataset(), 3.),
 
     # Prose
-    (BibliotikDataset()    , 1.5 ),
-    (GutenbergDataset()    , 2.5 ),
-    (BookCorpusDataset()   , 1.5 ),
+    (BibliotikDataset(), 1.5),
+    (GutenbergDataset(), 2.5),
+    (BookCorpusDataset(), 1.5),
 
     # Github
-    (GithubDataset()       , 1.  ),
+    (GithubDataset(), 1.),
 
     # Dialogue
-    (UbuntuIRCDataset()    , 2.  ),
-    (HackerNewsDataset()   , 2.  ),
-    (EuroParlDataset()     , 2.  ),
-    (YTSubtitlesDataset()  , 2.  ),
-    (OpensubtitlesDataset(), 1.5 ),
+    (UbuntuIRCDataset(), 2.),
+    (HackerNewsDataset(), 2.),
+    (EuroParlDataset(), 2.),
+    (YTSubtitlesDataset(), 2.),
+    (OpensubtitlesDataset(), 1.5),
 
     # Misc
-    (DMMathDataset()       , 2.  ),
-    (EnronEmailsDataset()  , 2.  ),
+    (DMMathDataset(), 2.),
+    (EnronEmailsDataset(), 2.),
+
+]
+
+general_prose_dialogue = [
+    # General internet
+    (OpenWebText2Dataset(), 2.),
+    (WikipediaDataset(), 3.),
+
+    # Prose
+    (BibliotikDataset(), 1.5),
+    (GutenbergDataset(), 2.5),
+    (BookCorpusDataset(), 1.5),
+
+    # Dialogue
+    (UbuntuIRCDataset(), 2.),
+    (HackerNewsDataset(), 2.),
+    (EuroParlDataset(), 2.),
+    (YTSubtitlesDataset(), 2.),
+    (OpensubtitlesDataset(), 1.5),
 
 ]
 
@@ -55,6 +73,7 @@ def take(n, iter):
             break
     return ret
 
+
 def mk_table(datasets, train_chars, print_latex=False):
     values = []
 
@@ -63,11 +82,15 @@ def mk_table(datasets, train_chars, print_latex=False):
     for dataset, weight in datasets:
         size = dataset.size()
         relative_weight = size * weight / total_weight
-        values.append([dataset.name(), size, '{:.2%}'.format(relative_weight), '{:.4f}'.format(train_chars / size * relative_weight), size * weight, humanbytes(size / dataset.num_docs(), 'KiB')])
-    
+        values.append([dataset.name(), size, '{:.2%}'.format(relative_weight),
+                       '{:.4f}'.format(train_chars / size * relative_weight), size * weight,
+                       humanbytes(size / dataset.num_docs(), 'KiB')])
+
     values.sort(key=lambda x: -x[4])
-    values.append(['**Total**', "", "", "", sum([x[4] for x in values]), humanbytes(sum([x[1] for x in values]) / sum(x[0].num_docs() for x in datasets), 'KiB')])
-    values = [[x[0], humanbytes(x[1], 'GiB') if x[1] else "", x[2], x[3], humanbytes(x[4], 'GiB'), x[5]] for x in values]
+    values.append(['**Total**', "", "", "", sum([x[4] for x in values]),
+                   humanbytes(sum([x[1] for x in values]) / sum(x[0].num_docs() for x in datasets), 'KiB')])
+    values = [[x[0], humanbytes(x[1], 'GiB') if x[1] else "", x[2], x[3], humanbytes(x[4], 'GiB'), x[5]] for x in
+              values]
 
     writer = MarkdownTableWriter()
     writer.table_name = "The Pile™"
@@ -78,7 +101,8 @@ def mk_table(datasets, train_chars, print_latex=False):
         rows = []
         for row in values[:-1]:
             rows.append("        " + " & ".join(map(lambda x: str(x).replace('%', r'\%'), row)) + r" \\")
-        totalrow = " & ".join(map(lambda x: r'\textbf{%s}' % str(x).replace('%', r'\%') if x else "", values[-1][1:])) + r" \\"
+        totalrow = " & ".join(
+            map(lambda x: r'\textbf{%s}' % str(x).replace('%', r'\%') if x else "", values[-1][1:])) + r" \\"
         latex = r"""
 \begin{table*}[t!]
     \centering
@@ -105,7 +129,7 @@ def dataset_tqdm(dset):
     pbar = tqdm(total=dset.size(), unit='B', unit_scale=True, unit_divisor=1024)
     for doc in dset.documents():
         pbar.update(utf8len(doc))
-        yield doc 
+        yield doc
 
 
 class Profiler:
@@ -132,7 +156,7 @@ class Profiler:
                 times.sort(key=lambda x: x[1])
                 for name, total, ct in times:
                     print(name.ljust(22), '{:.8f}'.format(total / ct), str(ct).rjust(8), '{:.4f}'.format(total))
-            
+
             return doc
 
 
@@ -142,7 +166,7 @@ class PileReplication(Dataset):
         self.dataset_bytes = dataset_bytes
         self.profile = profile
         self.rnd = random.Random(42)
-    
+
     def name(self):
         return "Custom Pile"
 
@@ -157,11 +181,10 @@ class PileReplication(Dataset):
             relative_weight = weight * dataset.num_docs() / total_weight
             datasets.append((dataset.name(), cycle_documents(dataset)))
             weights.append(relative_weight)
-        
+
         # yield from dataset until right number of bytes
         total_bytes = 0
         pbar = tqdm(total=self.dataset_bytes, unit='B', unit_scale=True, unit_divisor=1024)
-
 
         profiler = Profiler(profile=self.profile)
         while True:
@@ -182,7 +205,7 @@ class PileReplication(Dataset):
 
     def clean(self):
         for dataset, _ in self.datasets: dataset.clean()
-    
+
     def size(self):
         return self.dataset_bytes
 
@@ -202,16 +225,17 @@ class ThePile(Dataset):
 
     def clean(self):
         rm_if_exists('pile_output')
-    
+
     def size(self):
         return 1200 * 1024 * 1024 * 1024
+
 
 class LimitedDataset(Dataset):
     def __init__(self, dataset, limit_size):
         self.dataset = dataset
         self.limit_size = limit_size
         self.rnd = random.Random(42)
-    
+
     def name(self):
         return self.dataset.name() + " (truncated)"
 
@@ -227,10 +251,10 @@ class LimitedDataset(Dataset):
 
             if numer <= 0 or denom <= 0:
                 break
-    
+
     def clean(self):
         self.dataset.clean()
-    
+
     def size(self):
         return self.limit_size
 
@@ -243,6 +267,7 @@ import collections
 import argparse
 import json
 
+
 def make_fasttext(pile, keep_frac):
     with open('fasttext_pile.txt', 'w') as fh, open('pile_sample.txt', 'w') as fh2:
         for x, _ in pile:
@@ -253,20 +278,23 @@ def make_fasttext(pile, keep_frac):
             if random.random() < 0.001:
                 fh2.write(x + '<|endoftext|>\n')
 
+
 def lang_stats(pile):
-    download_file('https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin', 'lid.176.bin', '7e69ec5451bc261cc7844e49e4792a85d7f09c06789ec800fc4a44aec362764e')
-    
-    langdet = fasttext.load_model("lid.176.bin") 
+    download_file('https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin', 'lid.176.bin',
+                  '7e69ec5451bc261cc7844e49e4792a85d7f09c06789ec800fc4a44aec362764e')
+
+    langdet = fasttext.load_model("lid.176.bin")
     langs = collections.defaultdict(lambda: collections.defaultdict(int))
     for i, (data, meta) in enumerate(pile.documents()):
         details = langdet.predict(data.replace('\n', ' ')[:3000], k=1)
 
         langs[meta['pile_set_name']][details[0][0].replace('__label__', '')] += 1
 
-        if (i+1) % 100000 == 0:
+        if (i + 1) % 100000 == 0:
             for name, x in langs.items():
                 print('========= {} =========='.format(name))
-                print('\n'.join([k + ',' + str(v / sum(x.values())).ljust(9) for k,v in sorted(list(x.items()), key=lambda x: -x[1])]))
+                print('\n'.join([k + ',' + str(v / sum(x.values())).ljust(9) for k, v in
+                                 sorted(list(x.items()), key=lambda x: -x[1])]))
 
             ob = {
                 'langs': langs
@@ -293,7 +321,7 @@ def sample_from_sets(datasets, n_docs):
             if i in indices:
                 docs.append((doc, meta))
                 pbar.update(1)
-        
+
         try:
             os.mkdir('dataset_samples')
         except:
@@ -315,8 +343,10 @@ def docs_for_dedupe():
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('--general_prose_dialogue', action='store_true', help='general prose dialogue')
     parser.add_argument('--force_download', action='store_true', help='force download all')
-    parser.add_argument('--limit', type=str, help='limit output size - this option causes read_amount tokens to be generated and then limit tokens to be sampled')
+    parser.add_argument('--limit', type=str,
+                        help='limit output size - this option causes read_amount tokens to be generated and then limit tokens to be sampled')
     parser.add_argument('--using', type=str, default='pile', help='the dataset to use')
     parser.add_argument('--chunk', type=str, help='output chunk size (for make_lmd)')
     parser.add_argument('--interleave_output', type=int, help='output interleaved chunks (for make_lmd)')
@@ -358,13 +388,17 @@ if __name__ == '__main__':
     if args.force_download:
         for dset, _ in datasets:
             dset._download()
-    
+
+    if args.general_prose_dialogue:
+        for dset, _ in general_prose_dialogue:
+            dset._download()
+
     if args.limit:
         size_limit = parse_size(args.limit)
         pile = LimitedDataset(pile, size_limit)
 
     if args.make_lmd:
-        assert not (args.interleave_output and args.chunk) # can't chunk and interleave
+        assert not (args.interleave_output and args.chunk)  # can't chunk and interleave
 
         if args.interleave_output:
             ars = [lmd.Archive('pile_pass1/chunk{}'.format(i)) for i in range(args.interleave_output)]
@@ -378,15 +412,15 @@ if __name__ == '__main__':
         for doc, meta in pile.documents():
             if args.interleave_output:
                 ar = random.choice(ars)
-            
+
             ar.add_data(doc, meta)
-                
+
             cursize += len(doc)
             if args.chunk and cursize > chunk_size:
                 # interleave will not be on
                 cursize = 0
                 ar.commit(archive_name=args.using)
-        
+
         if args.interleave_output:
             for ar in ars: ar.commit(archive_name=args.using)
         else:
@@ -394,10 +428,10 @@ if __name__ == '__main__':
 
     if args.make_fasttext:
         make_fasttext(pile.documents(), 0.1)
-    
+
     if args.make_dataset_samples:
         sample_from_sets(datasets, args.make_dataset_samples)
-    
+
     if args.make_lang_analysis:
         lang_stats(pile)
 
